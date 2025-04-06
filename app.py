@@ -1,3 +1,5 @@
+st.write("Chaves disponíveis no st.secrets:", list(st.secrets.keys()))
+
 import streamlit as st
 import os
 import json
