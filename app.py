@@ -109,12 +109,17 @@ if st.button("▶️ Rodar Análise"):
     with open(nome_arquivo, "w") as f:
         f.write(resposta)
 
-    media = MediaIoBaseDownload(io.BytesIO(resposta.encode()), request=None)
-    drive_service.files().create(
-        body={"name": nome_arquivo, "parents": [pastas_ids['saida_gpt']]},
-        media_body=media,
-        fields="id"
-    ).execute()
+  from googleapiclient.http import MediaIoBaseUpload  # no início do script
+
+conteudo = io.BytesIO(resposta.encode())
+media = MediaIoBaseUpload(conteudo, mimetype='text/plain')
+
+drive_service.files().create(
+    body={"name": nome_arquivo, "parents": [pastas_ids['saida_gpt']]},
+    media_body=media,
+    fields="id"
+).execute()
+
 
     # WhatsApp
     resumo = "Análise Financeira concluída. Veja principais insights no Drive."  # ou gerar a partir da resposta
