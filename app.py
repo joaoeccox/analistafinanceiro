@@ -9,9 +9,6 @@ from googleapiclient.http import MediaIoBaseDownload, MediaIoBaseUpload
 import pandas as pd
 import io
 
-# ✅ A primeira linha Streamlit obrigatoriamente
-st.set_page_config(page_title="Análise Financeira LJP", layout="centered")
-
 # ---------------------- CONFIGURAÇÕES ----------------------
 openai_key = st.secrets["OPENAI_API_KEY"]
 zapi_user = st.secrets["ZAPI_USER"]
@@ -52,7 +49,7 @@ def buscar_csv_mais_recente(pasta_id):
     downloader = MediaIoBaseDownload(fh, request)
     done = False
     while not done:
-        status, done = downloader.next_chunk()
+        _, done = downloader.next_chunk()
     fh.seek(0)
     return pd.read_csv(fh, encoding='latin1', sep=';')
 
@@ -89,6 +86,7 @@ def enviar_zapi(mensagem):
 
 # ---------------------- INTERFACE ----------------------
 
+st.set_page_config(page_title="Análise Financeira LJP", layout="centered")
 st.title("📊 Análise Financeira - Laboratório João Paulo")
 
 col1, col2 = st.columns(2)
@@ -112,7 +110,7 @@ if st.button("▶️ Rodar Análise"):
     resposta = enviar_ao_gpt(dados)
     st.text_area("📄 Resposta do GPT", resposta, height=300)
 
-    # Salvar no Google Drive
+    # Salvar TXT no Drive
     nome_arquivo = f"analise_{periodo.strftime('%Y-%m-%d')}.txt"
     conteudo = io.BytesIO(resposta.encode())
     media = MediaIoBaseUpload(conteudo, mimetype='text/plain')
@@ -122,7 +120,16 @@ if st.button("▶️ Rodar Análise"):
         fields="id"
     ).execute()
 
-    # Enviar WhatsApp
-    resumo = "📬 Análise financeira concluída com sucesso. Acesse o relatório no Google Drive."
+    # WhatsApp
+    link_drive = f"https://drive.google.com/drive/folders/{pastas_ids['saida_gpt']}"
+    resumo = f"""📊 Relatório Financeiro LJP (GPT)
+
+Análise Financeira do Laboratório João Paulo
+
+{resposta[:1200]}...
+
+🔗 Acesse o relatório completo no seu Drive:
+{link_drive}
+"""
     enviar_zapi(resumo)
-    st.success("✅ Resumo enviado para o WhatsApp.")
+    st.success("📬 Resumo completo enviado para o WhatsApp!")
