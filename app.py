@@ -76,9 +76,18 @@ def enviar_zapi(mensagem):
     url = f"https://api.z-api.io/instances/{zapi_user}/token/{zapi_token}/send-text"
     payload = {
         "phone": zapi_phone,
-        "message": mensagem
+        "message": mensagem,
+        "clientToken": zapi_client_token
     }
-    requests.post(url, json=payload)
+    headers = {
+        "Content-Type": "application/json"
+    }
+    resposta = requests.post(url, json=payload, headers=headers)
+    if resposta.status_code == 200:
+        st.success("✅ Mensagem enviada com sucesso via Z-API.")
+    else:
+        st.error(f"❌ Erro ao enviar mensagem via Z-API: {resposta.status_code}")
+        st.text(resposta.text)
 
 # ---------------------- INTERFACE ----------------------
 
@@ -119,4 +128,4 @@ if st.button("▶️ Rodar Análise"):
     # WhatsApp
     resumo = "📬 Análise concluída com sucesso! Acesse o relatório completo no Google Drive."
     enviar_zapi(resumo)
-    st.success("✅ Resumo enviado para o WhatsApp!")
+    st.success("📦 Resultado enviado ao WhatsApp!")
