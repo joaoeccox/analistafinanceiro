@@ -1,5 +1,3 @@
-st.write("Chaves disponíveis no st.secrets:", list(st.secrets.keys()))
-
 import streamlit as st
 import os
 import json
@@ -10,6 +8,9 @@ from googleapiclient.discovery import build
 from googleapiclient.http import MediaIoBaseDownload, MediaIoBaseUpload
 import pandas as pd
 import io
+
+# Teste de leitura das chaves do secrets (pode remover depois)
+st.write("🔐 Chaves disponíveis no st.secrets:", list(st.secrets.keys()))
 
 # ---------------------- CONFIGURAÇÕES ----------------------
 openai_key = st.secrets["OPENAI_API_KEY"]
