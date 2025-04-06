@@ -9,8 +9,8 @@ from googleapiclient.http import MediaIoBaseDownload, MediaIoBaseUpload
 import pandas as pd
 import io
 
-# Teste de leitura das chaves do secrets (pode remover depois)
-st.write("🔐 Chaves disponíveis no st.secrets:", list(st.secrets.keys()))
+# ✅ A primeira linha Streamlit obrigatoriamente
+st.set_page_config(page_title="Análise Financeira LJP", layout="centered")
 
 # ---------------------- CONFIGURAÇÕES ----------------------
 openai_key = st.secrets["OPENAI_API_KEY"]
@@ -77,24 +77,18 @@ def enviar_ao_gpt(dados_json):
 
 def enviar_zapi(mensagem):
     url = f"https://api.z-api.io/instances/{zapi_user}/token/{zapi_token}/send-text"
+    headers = {
+        "Content-Type": "application/json",
+        "client-token": zapi_client_token
+    }
     payload = {
         "phone": zapi_phone,
-        "message": mensagem,
-        "clientToken": zapi_client_token
+        "message": mensagem
     }
-    headers = {
-        "Content-Type": "application/json"
-    }
-    resposta = requests.post(url, json=payload, headers=headers)
-    if resposta.status_code == 200:
-        st.success("✅ Mensagem enviada com sucesso via Z-API.")
-    else:
-        st.error(f"❌ Erro ao enviar mensagem via Z-API: {resposta.status_code}")
-        st.text(resposta.text)
+    requests.post(url, headers=headers, json=payload)
 
 # ---------------------- INTERFACE ----------------------
 
-st.set_page_config(page_title="Análise Financeira LJP", layout="centered")
 st.title("📊 Análise Financeira - Laboratório João Paulo")
 
 col1, col2 = st.columns(2)
@@ -118,7 +112,7 @@ if st.button("▶️ Rodar Análise"):
     resposta = enviar_ao_gpt(dados)
     st.text_area("📄 Resposta do GPT", resposta, height=300)
 
-    # Salvar TXT no Drive
+    # Salvar no Google Drive
     nome_arquivo = f"analise_{periodo.strftime('%Y-%m-%d')}.txt"
     conteudo = io.BytesIO(resposta.encode())
     media = MediaIoBaseUpload(conteudo, mimetype='text/plain')
@@ -128,7 +122,7 @@ if st.button("▶️ Rodar Análise"):
         fields="id"
     ).execute()
 
-    # WhatsApp
-    resumo = "📬 Análise concluída com sucesso! Acesse o relatório completo no Google Drive."
+    # Enviar WhatsApp
+    resumo = "📬 Análise financeira concluída com sucesso. Acesse o relatório no Google Drive."
     enviar_zapi(resumo)
-    st.success("📦 Resultado enviado ao WhatsApp!")
+    st.success("✅ Resumo enviado para o WhatsApp.")
