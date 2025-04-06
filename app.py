@@ -5,12 +5,11 @@ import requests
 from datetime import datetime
 from google.oauth2 import service_account
 from googleapiclient.discovery import build
-from googleapiclient.http import MediaIoBaseDownload
+from googleapiclient.http import MediaIoBaseDownload, MediaIoBaseUpload
 import pandas as pd
 import io
 
 # ---------------------- CONFIGURAÇÕES ----------------------
-# Ambiente de produção com variáveis do Streamlit Cloud (secrets)
 openai_key = st.secrets["OPENAI_API_KEY"]
 zapi_user = st.secrets["ZAPI_USER"]
 zapi_token = st.secrets["ZAPI_TOKEN"]
@@ -19,11 +18,12 @@ zapi_phone = st.secrets["ZAPI_PHONE"]
 gpt_model = "gpt-4"
 gpt_url = "https://api.openai.com/v1/chat/completions"
 
-# Autenticação Google
-credentials = service_account.Credentials.from_service_account_info(st.secrets["gcp_service_account"], scopes=["https://www.googleapis.com/auth/drive"])
+credentials = service_account.Credentials.from_service_account_info(
+    st.secrets["gcp_service_account"],
+    scopes=["https://www.googleapis.com/auth/drive"]
+)
 drive_service = build("drive", "v3", credentials=credentials)
 
-# IDs das pastas
 pastas_ids = {
     "tabela_preco_convenios": "1FwE_Qdjv6ERsL3Dt9dUr4xrIbxzYxWkt",
     "tabela_custos_exames": "1GAoelILXNIMplq_g-jZkd9Gc_ebUFxT3",
@@ -45,7 +45,6 @@ def buscar_csv_mais_recente(pasta_id):
         return None
     file_id = arquivos[0]['id']
     request = drive_service.files().get_media(fileId=file_id)
-    nome_arquivo = arquivos[0]['name']
     fh = io.BytesIO()
     downloader = MediaIoBaseDownload(fh, request)
     done = False
@@ -96,7 +95,10 @@ if st.button("▶️ Rodar Análise"):
     for chave, id_pasta in pastas_ids.items():
         df = buscar_csv_mais_recente(id_pasta)
         if df is not None:
-            colunas_numericas = [col for col in df.columns if any(p in col.lower() for p in ['valor', 'fat', 'bruto', 'líquido', 'desconto', 'receita', 'custo'])]
+            colunas_numericas = [
+                col for col in df.columns if any(p in col.lower()
+                for p in ['valor', 'fat', 'bruto', 'líquido', 'desconto', 'receita', 'custo'])
+            ]
             df = tratar_valores_numericos(df, colunas_numericas)
             dados[chave] = df.to_dict(orient='records')
 
@@ -104,24 +106,17 @@ if st.button("▶️ Rodar Análise"):
     resposta = enviar_ao_gpt(dados)
     st.text_area("📄 Resposta do GPT", resposta, height=300)
 
-    # Salvar em TXT no Drive
+    # Salvar TXT no Drive
     nome_arquivo = f"analise_{periodo.strftime('%Y-%m-%d')}.txt"
-    with open(nome_arquivo, "w") as f:
-        f.write(resposta)
-
-  from googleapiclient.http import MediaIoBaseUpload  # no início do script
-
-conteudo = io.BytesIO(resposta.encode())
-media = MediaIoBaseUpload(conteudo, mimetype='text/plain')
-
-drive_service.files().create(
-    body={"name": nome_arquivo, "parents": [pastas_ids['saida_gpt']]},
-    media_body=media,
-    fields="id"
-).execute()
-
+    conteudo = io.BytesIO(resposta.encode())
+    media = MediaIoBaseUpload(conteudo, mimetype='text/plain')
+    drive_service.files().create(
+        body={"name": nome_arquivo, "parents": [pastas_ids['saida_gpt']]},
+        media_body=media,
+        fields="id"
+    ).execute()
 
     # WhatsApp
-    resumo = "Análise Financeira concluída. Veja principais insights no Drive."  # ou gerar a partir da resposta
+    resumo = "📬 Análise concluída com sucesso! Acesse o relatório completo no Google Drive."
     enviar_zapi(resumo)
-    st.success("📬 Resumo enviado para o WhatsApp!")
+    st.success("✅ Resumo enviado para o WhatsApp!")
