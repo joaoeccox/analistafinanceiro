@@ -1,0 +1,15 @@
+{
+  "name": "Análise Financeira LJP",
+  "short_name": "LJP Financeiro",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#0066cc",
+  "icons": [
+    {
+      "src": "logo.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
